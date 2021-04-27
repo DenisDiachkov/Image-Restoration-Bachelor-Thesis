@@ -12,7 +12,7 @@ def base_args():
     parser.add_argument(
         "--mode", type=str, choices=['train', 'test'], default='train')
     parser.add_argument(
-        "--gpu", type=str)
+        "--gpu", type=str, default="0")
     parser.add_argument(
         "--cpu", action="store_true")
     parser.add_argument(
