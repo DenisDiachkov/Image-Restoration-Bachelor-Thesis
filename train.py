@@ -54,8 +54,11 @@ def train_args(parent_parser):
 def get_module(args):
     model = ImageRestorationModel(3, 3)
     optimizer = optim.Adam(
-        model.parameters(), lr=1e-4)
-    scheduler = torch.optim.lr_scheduler.StepLR((optimizer, 0.99)
+        model.parameters(), lr=1e-3)
+    scheduler = {
+        'scheduler': torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.3, patience=5),
+        'monitor': "PSNR_epoch",
+    }
     criterion = nn.L1Loss()
     return Image2ImageModule(model, optimizer, scheduler, criterion, args)
 

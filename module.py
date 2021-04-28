@@ -55,6 +55,8 @@ class Image2ImageModule(LightningModule):
             return None
         if not isinstance(self.optimizer, list):
             self.optimizer = [self.optimizer]
+        if self.scheduler is None:
+            return self.optimizer
         if not isinstance(self.scheduler, list):
             self.scheduler = [self.scheduler]
         return self.optimizer, self.scheduler
