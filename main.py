@@ -2,7 +2,6 @@ import argparse
 import multiprocessing as mp
 import warnings
 from test import test
-
 import utils
 from train import train
 
@@ -10,7 +9,7 @@ from train import train
 def base_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mode", type=str, choices=['train', 'test'], default='train')
+        "--mode", type=str, choices=['train', 'test'], default='train')   
     parser.add_argument(
         "--gpu", type=str, default="0")
     parser.add_argument(
@@ -21,6 +20,13 @@ def base_args():
     parser.add_argument("--Wall", action="store_true")
 
     args, _ = parser.parse_known_args()
+    if args.mode == 'train':
+        parser.add_argument("--resume", action="store_true")
+        parser.add_argument("--pretrained_path", "-pp")
+    elif args.mode == 'test':
+        parser.add_argument("--pretrained_path", "-pp", required=True)
+
+        
     utils.set_device(args)
     return args, parser
 

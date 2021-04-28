@@ -1,6 +1,6 @@
 import argparse
 from datetime import datetime
-
+import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as sched
@@ -11,6 +11,8 @@ from dataset import ImageRestorationDataModule
 from module import Image2ImageModule
 from net import ImageRestorationModel
 import os
+from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
+
 
 def train_args(parent_parser):
     parser = argparse.ArgumentParser(
@@ -24,6 +26,8 @@ def train_args(parent_parser):
         default=datetime.now().strftime("%d_%m_%Y_%H_%M_%S"))
     parser.add_argument(
         "--patch_size", '-ps', type=int, default=64)
+    parser.add_argument(
+        "--scale_factor", '-sf', type=int, default=4)
 
 
     parser.add_argument(
@@ -47,23 +51,32 @@ def train_args(parent_parser):
     return args, parser
 
 
-def get_module():
+def get_module(args):
     model = ImageRestorationModel(3, 3)
     optimizer = optim.Adam(
         model.parameters(), lr=1e-4)
-    scheduler = sched.CosineAnnealingWarmRestarts(
-        optimizer, 150)
+    scheduler = torch.optim.lr_scheduler.StepLR((optimizer, 0.99)
     criterion = nn.L1Loss()
-    return Image2ImageModule(model, optimizer, scheduler, criterion)
+    return Image2ImageModule(model, optimizer, scheduler, criterion, args)
 
 
 def train(args, parser):
     args, parser = train_args(parser)
-    tb_logger = tb("..", "experiments", version=args.experiment_name)
+    tb_logger = tb("experiments", version=args.experiment_name)
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=os.path.join("experiments", args.experiment_name),
+        save_top_k=1,
+        monitor="PSNR",
+        mode="max"
+    )
     trainer = Trainer(
         gpus=args.gpu,
         logger=tb_logger,
-        num_sanity_val_steps=1,
+        limit_val_batches=0,
+        # limit_train_batches=2,
+        num_sanity_val_steps=0,
         deterministic=True,
+        checkpoint_callback=checkpoint_callback,
+        resume_from_checkpoint= args.pretrained_path if args.resume else None,
     )
-    trainer.fit(get_module(), datamodule=ImageRestorationDataModule(args))
+    trainer.fit(get_module(args), datamodule=ImageRestorationDataModule(args))
